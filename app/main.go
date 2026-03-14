@@ -1,0 +1,166 @@
+package main
+
+import (
+	"fmt"
+	"log"
+	"strings"
+
+	tea "github.com/charmbracelet/bubbletea"
+)
+
+type Mode int
+
+const (
+	RssSelect Mode = iota
+	ArticleSelect
+	ArticleView
+)
+
+type model struct {
+	body         string
+	showArticle  bool
+	articleStart int
+	articleEnd   int
+
+	rssItems        []RSS
+	rssCursor       int
+	rssSelected     int
+	articleCursor   int
+	articleSelected int
+	mode            Mode
+}
+
+func initialModel() model {
+	// body, _ := fetchAll()
+	rssItems, err := fetchRssItems()
+
+	if err != nil {
+		panic(fmt.Sprintf("unexpected error during rss fetch: %v", err))
+	}
+
+	return model{
+		// body: body,
+
+		articleStart: 0,
+		articleEnd:   40,
+
+		rssItems: rssItems,
+	}
+}
+
+func (m model) Init() tea.Cmd {
+	return nil
+}
+
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "ctrl+c", "q":
+			return m, tea.Quit
+		case "r":
+			m.mode = RssSelect
+		case "a":
+			m.mode = ArticleSelect
+		case "v":
+			m.mode = ArticleView
+		case "up", "k":
+			if m.mode == RssSelect && m.rssCursor > 0 {
+				m.rssCursor--
+			}
+			if m.mode == ArticleSelect && m.articleCursor > 0 {
+				m.articleCursor--
+			}
+			if m.mode == ArticleView && m.articleStart-10 >= 0 {
+				m.articleStart -= 10
+				m.articleEnd -= 10
+			}
+		case "down", "j":
+			if m.mode == RssSelect && m.rssCursor < len(m.rssItems) {
+				m.rssCursor++
+			}
+			if m.mode == ArticleSelect && m.articleCursor < len(m.rssItems[m.rssSelected].Channel.Items) {
+				m.articleCursor++
+			}
+			if m.mode == ArticleView && m.articleEnd+10 <= len(strings.Split(m.body, "\n"))-1 {
+				m.articleStart += 10
+				m.articleEnd += 10
+			}
+		case "enter":
+			if m.mode == RssSelect {
+				m.rssSelected = m.rssCursor
+				m.mode = ArticleSelect
+			} else if m.mode == ArticleSelect {
+				m.articleSelected = m.articleCursor
+				m.mode = ArticleView
+				body, err := fetchArticle(m.rssItems[m.rssSelected].Channel.Items[m.articleSelected].Link)
+
+				if err != nil {
+					fmt.Printf("Failed to load page: %v", err)
+				}
+
+				m.body = body
+			}
+		case "esc":
+			if m.mode > 0 {
+				m.mode--
+			}
+		}
+	}
+
+	return m, nil
+}
+
+func (m model) View() string {
+	if m.mode == RssSelect {
+		var sb strings.Builder
+
+		for i, rss := range m.rssItems {
+
+			cursor := " "
+			if i == m.rssCursor {
+				cursor = ">"
+			}
+			checked := " "
+			if i == m.rssSelected {
+				checked = "x"
+			}
+			s := fmt.Sprintf("%s [%s] %s\n", cursor, checked, rss.Channel.Title)
+			sb.WriteString(s)
+		}
+
+		return sb.String()
+	}
+
+	if m.mode == ArticleSelect {
+		var sb strings.Builder
+
+		for i, item := range m.rssItems[m.rssSelected].Channel.Items {
+			cursor := " "
+			if i == m.articleCursor {
+				cursor = ">"
+			}
+			checked := " "
+			if i == m.articleSelected {
+				checked = "x"
+			}
+			s := fmt.Sprintf("%s [%s] %s\n", cursor, checked, item.Title)
+			sb.WriteString(s)
+		}
+
+		return sb.String()
+	}
+
+	if m.mode == ArticleView {
+		return strings.Join(strings.Split(m.body, "\n")[m.articleStart:m.articleEnd], "\n")
+	}
+
+	return "There will be list of articles here someday"
+}
+
+func main() {
+	p := tea.NewProgram(initialModel())
+	if _, err := p.Run(); err != nil {
+		log.Fatalf("Got unexpected error: %v", err)
+	}
+}
