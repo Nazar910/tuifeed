@@ -50,17 +50,21 @@ type article struct {
 }
 
 func (a *article) up() {
-	if a.start-a.step > 0 {
-		a.start -= a.step
-		a.end -= a.step
+	step := a.step
+	if a.start-a.step < 0 {
+		step = a.start
 	}
+	a.start -= step
+	a.end -= step
 }
 
 func (a *article) down() {
-	if a.end+a.step < a.bodyLen {
-		a.start += a.step
-		a.end += a.step
+	step := a.step
+	if a.end+a.step >= a.bodyLen {
+		step = a.bodyLen - a.end
 	}
+	a.start += step
+	a.end += step
 }
 
 func initialModel() model {
@@ -104,7 +108,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		// reset to the start of the article for now
 		m.article.start = 0
-		m.article.end = msg.Height
+		m.article.end = msg.Height - 3 // safe margin
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
@@ -178,6 +182,7 @@ func (m model) View() string {
 
 func renderRssSelect(m model) string {
 	var sb strings.Builder
+	sb.WriteString("\n")
 
 	for i, rss := range m.rssItems {
 
@@ -198,6 +203,7 @@ func renderRssSelect(m model) string {
 
 func renderArticleSelect(m model) string {
 	var sb strings.Builder
+	sb.WriteString("\n")
 
 	for i, item := range m.rssItems[m.rssSelected].Channel.Items {
 		cursor := " "
