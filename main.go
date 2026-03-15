@@ -43,8 +43,24 @@ type model struct {
 }
 
 type article struct {
-	start int
-	end   int
+	start   int
+	end     int
+	bodyLen int
+	step    int
+}
+
+func (a *article) up() {
+	if a.start-a.step > 0 {
+		a.start -= a.step
+		a.end -= a.step
+	}
+}
+
+func (a *article) down() {
+	if a.end+a.step < a.bodyLen {
+		a.start += a.step
+		a.end += a.step
+	}
 }
 
 func initialModel() model {
@@ -73,7 +89,6 @@ func (m model) Init() tea.Cmd {
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case errMsg:
-		// is it usefull to store err in model?
 		m.err = msg.err
 		return m, tea.Quit
 	case rssLoadSuccess:
@@ -82,6 +97,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case articleLoadSuccess:
 		m.body = msg.body
+		m.article.bodyLen = len(m.body)
+		m.article.step = 10
 		m.mode = ArticleView
 		return m, nil
 	case tea.WindowSizeMsg:
@@ -99,9 +116,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.mode == ArticleSelect && m.articleCursor > 0 {
 				m.articleCursor--
 			}
-			if m.mode == ArticleView && m.article.start-10 >= 0 {
-				m.article.start -= 10
-				m.article.end -= 10
+			if m.mode == ArticleView {
+				m.article.up()
 			}
 		case "down", "j":
 			if m.mode == RssSelect && m.rssCursor < len(m.rssItems) {
@@ -110,9 +126,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.mode == ArticleSelect && m.articleCursor < len(m.rssItems[m.rssSelected].Channel.Items) {
 				m.articleCursor++
 			}
-			if m.mode == ArticleView && m.article.end+10 <= len(m.body)-1 {
-				m.article.start += 10
-				m.article.end += 10
+			if m.mode == ArticleView {
+				m.article.down()
 			}
 		case "enter":
 			if m.mode == RssSelect {
