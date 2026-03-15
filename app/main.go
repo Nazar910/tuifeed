@@ -24,17 +24,21 @@ const (
 )
 
 type model struct {
-	body         string
-	showArticle  bool
+	mode Mode
+	// article body in view mode
+	// each elem is a line
+	body []string
+
 	articleStart int
 	articleEnd   int
 
-	rssItems        []RSS
-	rssCursor       int
-	rssSelected     int
+	rssItems []RSS
+
+	rssCursor   int
+	rssSelected int
+
 	articleCursor   int
 	articleSelected int
-	mode            Mode
 }
 
 func initialModel() model {
@@ -87,7 +91,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.mode == ArticleSelect && m.articleCursor < len(m.rssItems[m.rssSelected].Channel.Items) {
 				m.articleCursor++
 			}
-			if m.mode == ArticleView && m.articleEnd+10 <= len(strings.Split(m.body, "\n"))-1 {
+			if m.mode == ArticleView && m.articleEnd+10 <= len(m.body)-1 {
 				m.articleStart += 10
 				m.articleEnd += 10
 			}
@@ -104,7 +108,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					fmt.Printf("Failed to load page: %v", err)
 				}
 
-				m.body = body
+				m.body = strings.Split(body, "\n")
 			}
 		case "esc":
 			if m.mode > 0 {
@@ -173,5 +177,5 @@ func renderArticleSelect(m model) string {
 }
 
 func renderArticleView(m model) string {
-	return strings.Join(strings.Split(m.body, "\n")[m.articleStart:m.articleEnd], "\n")
+	return strings.Join(m.body[m.articleStart:m.articleEnd], "\n")
 }
