@@ -124,10 +124,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.article.up()
 			}
 		case "down", "j":
-			if m.mode == RssSelect && m.rssCursor < len(m.rssItems) {
+			if m.mode == RssSelect && m.rssCursor < len(m.rssItems)-1 {
 				m.rssCursor++
 			}
-			if m.mode == ArticleSelect && m.articleCursor < len(m.rssItems[m.rssSelected].Channel.Items) {
+			if m.mode == ArticleSelect && m.articleCursor < len(m.rssItems[m.rssSelected].Channel.Items)-1 {
 				m.articleCursor++
 			}
 			if m.mode == ArticleView {
@@ -182,7 +182,6 @@ func (m model) View() string {
 
 func renderRssSelect(m model) string {
 	var sb strings.Builder
-	sb.WriteString("\n")
 
 	for i, rss := range m.rssItems {
 
@@ -203,7 +202,6 @@ func renderRssSelect(m model) string {
 
 func renderArticleSelect(m model) string {
 	var sb strings.Builder
-	sb.WriteString("\n")
 
 	for i, item := range m.rssItems[m.rssSelected].Channel.Items {
 		cursor := " "
