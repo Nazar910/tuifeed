@@ -39,40 +39,55 @@ type model struct {
 
 	articleCursor   int
 	articleSelected int
+
+	err error
 }
 
 func initialModel() model {
-	rssItems, err := fetchRssItems()
-
-	if err != nil {
-		panic(fmt.Sprintf("unexpected error during rss fetch: %v", err))
-	}
-
 	return model{
 		articleStart: 0,
 		// TODO: use some proper value like max height or smth
 		articleEnd: 40,
-
-		rssItems: rssItems,
 	}
 }
 
+type errMsg struct{ err error }
+
+func (e errMsg) Error() string { return e.err.Error() }
+
+type rssLoadSuccess struct{ rssItems []RSS }
+type articleLoadSuccess struct{ body []string }
+
 func (m model) Init() tea.Cmd {
-	return nil
+	return func() tea.Msg {
+		rssItems, err := fetchRssItems()
+
+		if err != nil {
+			return errMsg{err}
+		}
+
+		return rssLoadSuccess{rssItems}
+	}
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case errMsg:
+		// is it usefull to store err in model?
+		m.err = msg.err
+		return m, tea.Quit
+	case rssLoadSuccess:
+		m.rssItems = msg.rssItems
+		m.mode = RssSelect
+		return m, nil
+	case articleLoadSuccess:
+		m.body = msg.body
+		m.mode = ArticleView
+		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
-		case "r":
-			m.mode = RssSelect
-		case "a":
-			m.mode = ArticleSelect
-		case "v":
-			m.mode = ArticleView
 		case "up", "k":
 			if m.mode == RssSelect && m.rssCursor > 0 {
 				m.rssCursor--
@@ -101,14 +116,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.mode = ArticleSelect
 			} else if m.mode == ArticleSelect {
 				m.articleSelected = m.articleCursor
-				m.mode = ArticleView
-				body, err := fetchArticle(m.rssItems[m.rssSelected].Channel.Items[m.articleSelected].Link)
+				l := m.rssItems[m.rssSelected].Channel.Items[m.articleSelected].Link
+				return m, func() tea.Msg {
+					body, err := fetchArticle(l)
 
-				if err != nil {
-					fmt.Printf("Failed to load page: %v", err)
+					if err != nil {
+						return errMsg{err}
+					}
+
+					return articleLoadSuccess{body: strings.Split(body, "\n")}
 				}
-
-				m.body = strings.Split(body, "\n")
 			}
 		case "esc":
 			if m.mode > 0 {
