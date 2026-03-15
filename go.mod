@@ -1,4 +1,4 @@
-module terminal-rss-reader-go
+module tuifeed
 
 go 1.26.1
 
