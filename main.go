@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	p := tea.NewProgram(initialModel())
+	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		log.Fatalf("Got unexpected error: %v", err)
 	}
@@ -108,7 +108,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		// reset to the start of the article for now
 		m.article.start = 0
-		m.article.end = msg.Height - 3 // safe margin
+		m.article.end = msg.Height - 1 // safe margin
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
