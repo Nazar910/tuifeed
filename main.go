@@ -29,8 +29,7 @@ type model struct {
 	// each elem is a line
 	body []string
 
-	articleStart int
-	articleEnd   int
+	article article
 
 	rssItems []RSS
 
@@ -43,12 +42,13 @@ type model struct {
 	err error
 }
 
+type article struct {
+	start int
+	end   int
+}
+
 func initialModel() model {
-	return model{
-		articleStart: 0,
-		// TODO: use some proper value like max height or smth
-		articleEnd: 40,
-	}
+	return model{}
 }
 
 type errMsg struct{ err error }
@@ -84,6 +84,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.body = msg.body
 		m.mode = ArticleView
 		return m, nil
+	case tea.WindowSizeMsg:
+		// reset to the start of the article for now
+		m.article.start = 0
+		m.article.end = msg.Height
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
@@ -95,9 +99,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.mode == ArticleSelect && m.articleCursor > 0 {
 				m.articleCursor--
 			}
-			if m.mode == ArticleView && m.articleStart-10 >= 0 {
-				m.articleStart -= 10
-				m.articleEnd -= 10
+			if m.mode == ArticleView && m.article.start-10 >= 0 {
+				m.article.start -= 10
+				m.article.end -= 10
 			}
 		case "down", "j":
 			if m.mode == RssSelect && m.rssCursor < len(m.rssItems) {
@@ -106,9 +110,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.mode == ArticleSelect && m.articleCursor < len(m.rssItems[m.rssSelected].Channel.Items) {
 				m.articleCursor++
 			}
-			if m.mode == ArticleView && m.articleEnd+10 <= len(m.body)-1 {
-				m.articleStart += 10
-				m.articleEnd += 10
+			if m.mode == ArticleView && m.article.end+10 <= len(m.body)-1 {
+				m.article.start += 10
+				m.article.end += 10
 			}
 		case "enter":
 			if m.mode == RssSelect {
@@ -138,6 +142,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
+	if m.err != nil {
+		return m.err.Error()
+	}
+
 	if m.mode == RssSelect {
 		return renderRssSelect(m)
 	}
@@ -194,5 +202,5 @@ func renderArticleSelect(m model) string {
 }
 
 func renderArticleView(m model) string {
-	return strings.Join(m.body[m.articleStart:m.articleEnd], "\n")
+	return strings.Join(m.body[m.article.start:m.article.end], "\n")
 }
