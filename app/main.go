@@ -8,6 +8,13 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+func main() {
+	p := tea.NewProgram(initialModel())
+	if _, err := p.Run(); err != nil {
+		log.Fatalf("Got unexpected error: %v", err)
+	}
+}
+
 type Mode int
 
 const (
@@ -31,7 +38,6 @@ type model struct {
 }
 
 func initialModel() model {
-	// body, _ := fetchAll()
 	rssItems, err := fetchRssItems()
 
 	if err != nil {
@@ -39,10 +45,9 @@ func initialModel() model {
 	}
 
 	return model{
-		// body: body,
-
 		articleStart: 0,
-		articleEnd:   40,
+		// TODO: use some proper value like max height or smth
+		articleEnd: 40,
 
 		rssItems: rssItems,
 	}
@@ -113,54 +118,60 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	if m.mode == RssSelect {
-		var sb strings.Builder
-
-		for i, rss := range m.rssItems {
-
-			cursor := " "
-			if i == m.rssCursor {
-				cursor = ">"
-			}
-			checked := " "
-			if i == m.rssSelected {
-				checked = "x"
-			}
-			s := fmt.Sprintf("%s [%s] %s\n", cursor, checked, rss.Channel.Title)
-			sb.WriteString(s)
-		}
-
-		return sb.String()
+		return renderRssSelect(m)
 	}
 
 	if m.mode == ArticleSelect {
-		var sb strings.Builder
-
-		for i, item := range m.rssItems[m.rssSelected].Channel.Items {
-			cursor := " "
-			if i == m.articleCursor {
-				cursor = ">"
-			}
-			checked := " "
-			if i == m.articleSelected {
-				checked = "x"
-			}
-			s := fmt.Sprintf("%s [%s] %s\n", cursor, checked, item.Title)
-			sb.WriteString(s)
-		}
-
-		return sb.String()
+		return renderArticleSelect(m)
 	}
 
 	if m.mode == ArticleView {
-		return strings.Join(strings.Split(m.body, "\n")[m.articleStart:m.articleEnd], "\n")
+		return renderArticleView(m)
 	}
 
 	return "There will be list of articles here someday"
 }
 
-func main() {
-	p := tea.NewProgram(initialModel())
-	if _, err := p.Run(); err != nil {
-		log.Fatalf("Got unexpected error: %v", err)
+func renderRssSelect(m model) string {
+	var sb strings.Builder
+
+	for i, rss := range m.rssItems {
+
+		cursor := " "
+		if i == m.rssCursor {
+			cursor = ">"
+		}
+		checked := " "
+		if i == m.rssSelected {
+			checked = "x"
+		}
+		s := fmt.Sprintf("%s [%s] %s\n", cursor, checked, rss.Channel.Title)
+		sb.WriteString(s)
 	}
+
+	return sb.String()
+}
+
+func renderArticleSelect(m model) string {
+	var sb strings.Builder
+
+	for i, item := range m.rssItems[m.rssSelected].Channel.Items {
+		cursor := " "
+		if i == m.articleCursor {
+			cursor = ">"
+		}
+		checked := " "
+		if i == m.articleSelected {
+			checked = "x"
+		}
+		s := fmt.Sprintf("%s [%s] %s\n", cursor, checked, item.Title)
+		sb.WriteString(s)
+	}
+
+	return sb.String()
+
+}
+
+func renderArticleView(m model) string {
+	return strings.Join(strings.Split(m.body, "\n")[m.articleStart:m.articleEnd], "\n")
 }

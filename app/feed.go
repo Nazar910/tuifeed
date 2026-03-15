@@ -97,41 +97,6 @@ func fetchRssItems() ([]RSS, error) {
 	return rssItems, nil
 }
 
-func fetchAll() (string, error) {
-	// feeds, err := readFeeds()
-	//
-	// if err != nil {
-	// 	return "", err
-	// }
-	//
-	// rss, err := fetchFeed(feeds[0])
-	//
-	// if err != nil {
-	// 	return "", err
-	// }
-	//
-	// for _, item := range rss.Channel.Items {
-	// 	fmt.Printf("item [%s] [%s]\n", item.Title, item.Link)
-	// }
-
-	res, err := http.Get("https://andrewkelley.me/post/zig-new-async-io-text-version.html")
-
-	if err != nil {
-		return "", fmt.Errorf("request error: %v", err)
-	}
-
-	body, _ := io.ReadAll(res.Body)
-	md, _ := htmlToMd.ConvertString(string(body))
-
-	out, err := glamour.Render(md, "dark")
-
-	if err != nil {
-		panic("failed to render md")
-	}
-
-	return out, err
-}
-
 func fetchArticle(url string) (string, error) {
 	response, err := http.Get(url)
 
