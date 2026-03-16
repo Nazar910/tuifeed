@@ -28,6 +28,8 @@ func readFeeds() ([]string, error) {
 		return nil, fmt.Errorf("failed to open feeds.json file: %v", err)
 	}
 
+	defer f.Close()
+
 	var feeds []string
 	err = json.NewDecoder(f).Decode(&feeds)
 	return feeds, err
@@ -64,6 +66,8 @@ func fetchFeed(url string) (RSS, error) {
 	if err != nil {
 		return RSS{}, err
 	}
+
+	defer response.Body.Close()
 
 	var rss RSS
 	err = xml.NewDecoder(response.Body).Decode(&rss)
@@ -103,6 +107,8 @@ func fetchArticle(url string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	defer response.Body.Close()
 
 	body, err := io.ReadAll(response.Body)
 
