@@ -1,6 +1,6 @@
 # tuifeed Terminal RSS Reader
 
-tuifeed is a terminal RSS feed reader built with Go. This is a pet project — a personal exercise in building TUI interfaces. The code is open for anyone to browse, learn from, or take inspiration.
+***tuifeed*** is a terminal RSS feed reader built with Go. This is a pet project — a personal exercise in building TUI interfaces. The code is open for anyone to browse, learn from, or take inspiration.
 
 Short demo:
 ![demo](./demo.gif)
