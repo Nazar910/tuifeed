@@ -43,10 +43,10 @@ type model struct {
 }
 
 type article struct {
-	start   int
-	end     int
-	bodyLen int
-	step    int
+	start      int
+	viewHeight int
+	bodyLen    int
+	step       int
 }
 
 func (a *article) up() {
@@ -55,16 +55,15 @@ func (a *article) up() {
 		step = a.start
 	}
 	a.start -= step
-	a.end -= step
 }
 
 func (a *article) down() {
 	step := a.step
-	if a.end+a.step >= a.bodyLen {
-		step = a.bodyLen - a.end
+	end := a.start + a.viewHeight
+	if end+a.step >= a.bodyLen {
+		step = a.bodyLen - end
 	}
 	a.start += step
-	a.end += step
 }
 
 func initialModel() model {
@@ -103,12 +102,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.body = msg.body
 		m.article.bodyLen = len(m.body)
 		m.article.step = 10
+		m.article.start = 0
 		m.mode = ArticleView
 		return m, nil
 	case tea.WindowSizeMsg:
 		// reset to the start of the article for now
-		m.article.start = 0
-		m.article.end = msg.Height - 1 // safe margin
+		m.article.viewHeight = msg.Height
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
@@ -221,5 +220,5 @@ func renderArticleSelect(m model) string {
 }
 
 func renderArticleView(m model) string {
-	return strings.Join(m.body[m.article.start:m.article.end], "\n")
+	return strings.Join(m.body[m.article.start:m.article.start+m.article.viewHeight], "\n")
 }
