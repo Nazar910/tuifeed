@@ -9,8 +9,6 @@ import (
 	"os"
 	"path"
 
-	"io"
-
 	htmlToMd "github.com/JohannesKaufmann/html-to-markdown/v2"
 	"github.com/charmbracelet/glamour"
 )
@@ -110,19 +108,13 @@ func fetchArticle(url string) (string, error) {
 
 	defer response.Body.Close()
 
-	body, err := io.ReadAll(response.Body)
-
-	if err != nil {
-		return "", err
-	}
-
-	md, err := htmlToMd.ConvertString(string(body))
+	md, err := htmlToMd.ConvertReader(response.Body)
 
 	if err != nil {
 		return "", fmt.Errorf("error while converting html to md: %v", err)
 	}
 
-	out, err := glamour.Render(md, "dark")
+	out, err := glamour.Render(string(md), "dark")
 
 	return out, err
 }
